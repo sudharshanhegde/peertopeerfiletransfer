@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 public class Tracker {
 
     private static final int TRACKER_PORT = 8000;
-    
+
     // NEW: The data structure is now more sophisticated.
     // The key is the filename.
     // The value is a FileInfo object containing all metadata about the file.
@@ -56,9 +56,10 @@ public class Tracker {
 
         // Synchronized method to add a peer to a specific chunk's list.
         public synchronized void addPeerForChunk(int chunkIndex, String peerAddress) {
-            chunkToPeersMap.computeIfAbsent(chunkIndex, k -> Collections.synchronizedList(new ArrayList<>())).add(peerAddress);
+            chunkToPeersMap.computeIfAbsent(chunkIndex, k -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(peerAddress);
         }
-        
+
         // Synchronized method to remove a peer from all chunk lists.
         public synchronized void removePeer(String peerAddress) {
             chunkToPeersMap.values().forEach(peerList -> peerList.remove(peerAddress));
@@ -76,7 +77,7 @@ public class Tracker {
 
     private static class PeerHandler implements Runnable {
         private final Socket peerSocket;
-        private String peerAddress; 
+        private String peerAddress;
 
         public PeerHandler(Socket socket) {
             this.peerSocket = socket;
@@ -85,9 +86,8 @@ public class Tracker {
         @Override
         public void run() {
             try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(peerSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(peerSocket.getOutputStream(), true)
-            ) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(peerSocket.getInputStream()));
+                    PrintWriter out = new PrintWriter(peerSocket.getOutputStream(), true)) {
                 String message;
                 if ((message = in.readLine()) != null) {
                     JSONObject request = new JSONObject(message);
@@ -116,7 +116,7 @@ public class Tracker {
                 // handleExit();
             }
         }
-        
+
         /**
          * Handles registration of a new file with chunks.
          */
@@ -132,7 +132,8 @@ public class Tracker {
                 fileInfo.addPeerForChunk(i, peerAddress);
             }
             fileRegistry.put(filename, fileInfo);
-            System.out.println("Registered file '" + filename + "' from " + peerAddress + " with " + totalChunks + " chunks.");
+            System.out.println(
+                    "Registered file '" + filename + "' from " + peerAddress + " with " + totalChunks + " chunks.");
         }
 
         /**
@@ -164,13 +165,15 @@ public class Tracker {
             FileInfo fileInfo = fileRegistry.get(filename);
             if (fileInfo != null) {
                 fileInfo.addPeerForChunk(chunkIndex, peerAddress);
-                System.out.println("Updated chunk map for '" + filename + "'. Peer " + peerAddress + " now has chunk " + chunkIndex);
+                System.out.println("Updated chunk map for '" + filename + "'. Peer " + peerAddress + " now has chunk "
+                        + chunkIndex);
             }
         }
 
         // This method would be used with heartbeating to clean up disconnected peers.
         private void handleExit() {
-            if (peerAddress == null) return;
+            if (peerAddress == null)
+                return;
             System.out.println("Peer " + peerAddress + " disconnected. Removing from registry.");
             fileRegistry.values().forEach(fileInfo -> fileInfo.removePeer(peerAddress));
         }
